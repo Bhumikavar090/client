@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../../components/Sidebar";
-import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  FileCode2,
+  Loader2,
+} from "lucide-react";
 
 export default function NewIssuePage() {
   const router = useRouter();
@@ -11,6 +16,7 @@ export default function NewIssuePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
+  const [technicalContext, setTechnicalContext] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -28,13 +34,16 @@ export default function NewIssuePage() {
         "http://localhost:5000/api/issues",
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             title,
             description,
             priority,
+            technicalContext,
           }),
         }
       );
@@ -47,7 +56,7 @@ export default function NewIssuePage() {
         );
       }
 
-      router.push("/issues");
+      router.push(`/issues/${data.issue._id}`);
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -82,10 +91,10 @@ export default function NewIssuePage() {
               Report an issue
             </h1>
 
-            <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
-              Describe the problem clearly. DevTraxe will analyze the
-              issue and help identify possible causes and related
-              incidents.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+              Describe the problem and provide technical context when
+              available. More useful evidence can help DevTraxe produce
+              a better investigation.
             </p>
           </div>
 
@@ -139,9 +148,9 @@ export default function NewIssuePage() {
                 onChange={(event) =>
                   setDescription(event.target.value)
                 }
-                placeholder="What happened? When did it start? Which users or systems are affected?"
+                placeholder="What happened? When did it start? What part of the application is affected?"
                 required
-                rows={8}
+                rows={7}
                 className="w-full resize-none rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-blue-500"
               />
             </div>
@@ -180,6 +189,51 @@ export default function NewIssuePage() {
               </select>
             </div>
 
+            <div className="mt-8 border-t border-zinc-800 pt-8">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                  <FileCode2
+                    size={18}
+                    className="text-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="technicalContext"
+                    className="text-sm font-medium text-zinc-200"
+                  >
+                    Technical context
+                    <span className="ml-2 font-normal text-zinc-600">
+                      Optional
+                    </span>
+                  </label>
+
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    Add logs, error messages, stack traces, API responses,
+                    or relevant code snippets.
+                  </p>
+                </div>
+              </div>
+
+              <textarea
+                id="technicalContext"
+                value={technicalContext}
+                onChange={(event) =>
+                  setTechnicalContext(event.target.value)
+                }
+                placeholder={`Example:
+
+TypeError: Cannot read properties of undefined
+
+POST /api/profile 500
+
+Error started after deploying version 2.4.0`}
+                rows={10}
+                className="mt-4 w-full resize-y rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 font-mono text-sm leading-6 text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-blue-500"
+              />
+            </div>
+
             <div className="mt-8 flex items-center justify-end gap-3 border-t border-zinc-800 pt-6">
               <button
                 type="button"
@@ -202,8 +256,8 @@ export default function NewIssuePage() {
                 )}
 
                 {isSubmitting
-                  ? "Creating issue..."
-                  : "Create issue"}
+                  ? "Analyzing issue..."
+                  : "Create & analyze issue"}
               </button>
             </div>
           </form>
