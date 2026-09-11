@@ -1,35 +1,90 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "../../components/Sidebar";
-import {
-  AlertCircle,
-  ArrowLeft,
-  FileCode2,
-  Loader2,
-} from "lucide-react";
+
+interface Project {
+  _id: string;
+  name: string;
+}
 
 export default function NewIssuePage() {
   const router = useRouter();
 
+  const [projects, setProjects] = useState<Project[]>([]);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
-  const [technicalContext, setTechnicalContext] = useState("");
+  const [technicalContext, setTechnicalContext] =
+    useState("");
+  const [project, setProject] = useState("");
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingProjects, setLoadingProjects] =
+    useState(true);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/projects"
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Failed to fetch projects"
+          );
+        }
+
+        const data = await response.json();
+
+        setProjects(data);
+
+        if (data.length > 0) {
+          setProject(data[0]._id);
+        }
+      } catch (error) {
+        console.error(error);
+
+        setError(
+          "Unable to load projects."
+        );
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
   const handleSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
-    setError("");
-    setIsSubmitting(true);
+    if (!title.trim() || !description.trim()) {
+      setError(
+        "Title and description are required."
+      );
+      return;
+    }
+
+    if (!project) {
+      setError(
+        "Please select a project."
+      );
+      return;
+    }
 
     try {
+      setSubmitting(true);
+      setError("");
+
       const response = await fetch(
         "http://localhost:5000/api/issues",
         {
@@ -40,10 +95,12 @@ export default function NewIssuePage() {
           },
 
           body: JSON.stringify({
-            title,
-            description,
+            title: title.trim(),
+            description: description.trim(),
             priority,
-            technicalContext,
+            technicalContext:
+              technicalContext.trim(),
+            project,
           }),
         }
       );
@@ -52,217 +109,227 @@ export default function NewIssuePage() {
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Failed to create issue"
+          data.message ||
+            "Failed to create issue"
         );
       }
 
-      router.push(`/issues/${data.issue._id}`);
+      router.push(
+        `/issues/${data.issue._id}`
+      );
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("Something went wrong");
-      }
+      console.error(error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to create issue."
+      );
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
-      <Sidebar />
+    <main className="min-h-screen bg-[#09090b] text-white">
+      <div className="max-w-4xl mx-auto px-6 py-10">
 
-      <main className="flex-1 px-8 py-10 lg:px-14">
-        <div className="mx-auto max-w-3xl">
-          <button
-            onClick={() => router.back()}
-            className="mb-8 flex items-center gap-2 text-sm text-zinc-500 transition hover:text-white"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
+        <button
+          onClick={() => router.push("/issues")}
+          className="text-sm text-zinc-400 hover:text-white transition mb-8"
+        >
+          ← Back to issues
+        </button>
 
-          <div className="mb-10">
-            <p className="text-sm text-blue-400">
-              New investigation
-            </p>
+        <div className="mb-10">
+          <p className="text-sm text-blue-400 mb-2">
+            DEVTRAXE AI
+          </p>
 
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
-              Report an issue
-            </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Report an issue
+          </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-              Describe the problem and provide technical context when
-              available. More useful evidence can help DevTraxe produce
-              a better investigation.
-            </p>
+          <p className="text-zinc-500 mt-2">
+            Describe the problem and let DevTraxe AI
+            investigate it.
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
+
+          {/* PROJECT */}
+
+          <div className="border border-zinc-800 bg-zinc-950 rounded-2xl p-6">
+            <label className="block text-sm font-medium mb-3">
+              Project
+            </label>
+
+            {loadingProjects ? (
+              <p className="text-sm text-zinc-500">
+                Loading projects...
+              </p>
+            ) : projects.length === 0 ? (
+              <div>
+                <p className="text-sm text-red-400 mb-3">
+                  No projects found. Create a project
+                  before reporting an issue.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push("/projects")
+                  }
+                  className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium"
+                >
+                  Create project
+                </button>
+              </div>
+            ) : (
+              <select
+                value={project}
+                onChange={(event) =>
+                  setProject(event.target.value)
+                }
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 outline-none focus:border-blue-500"
+              >
+                {projects.map((item) => (
+                  <option
+                    key={item._id}
+                    value={item._id}
+                  >
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8"
-          >
-            {error && (
-              <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
-                <AlertCircle
-                  size={18}
-                  className="mt-0.5 shrink-0"
-                />
 
-                <p>{error}</p>
-              </div>
-            )}
+          {/* ISSUE DETAILS */}
 
-            <div className="space-y-2">
-              <label
-                htmlFor="title"
-                className="text-sm font-medium text-zinc-200"
-              >
+          <div className="border border-zinc-800 bg-zinc-950 rounded-2xl p-6 space-y-5">
+
+            <div>
+              <label className="block text-sm font-medium mb-3">
                 Issue title
               </label>
 
               <input
-                id="title"
-                type="text"
                 value={title}
                 onChange={(event) =>
                   setTitle(event.target.value)
                 }
-                placeholder="e.g. Users are randomly getting logged out"
-                required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-blue-500"
+                placeholder="Users are randomly logged out"
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-blue-500"
               />
             </div>
 
-            <div className="mt-6 space-y-2">
-              <label
-                htmlFor="description"
-                className="text-sm font-medium text-zinc-200"
-              >
-                Describe the issue
+
+            <div>
+              <label className="block text-sm font-medium mb-3">
+                Description
               </label>
 
               <textarea
-                id="description"
                 value={description}
                 onChange={(event) =>
-                  setDescription(event.target.value)
+                  setDescription(
+                    event.target.value
+                  )
                 }
-                placeholder="What happened? When did it start? What part of the application is affected?"
-                required
-                rows={7}
-                className="w-full resize-none rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-blue-500"
+                placeholder="Describe what is happening..."
+                rows={6}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-blue-500 resize-none"
               />
             </div>
 
-            <div className="mt-6 space-y-2">
-              <label
-                htmlFor="priority"
-                className="text-sm font-medium text-zinc-200"
-              >
-                Initial priority
+
+            <div>
+              <label className="block text-sm font-medium mb-3">
+                Priority
               </label>
 
               <select
-                id="priority"
                 value={priority}
                 onChange={(event) =>
                   setPriority(event.target.value)
                 }
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-blue-500"
               >
-                <option value="low">
-                  Low — Minor inconvenience
-                </option>
-
-                <option value="medium">
-                  Medium — Needs investigation
+                <option value="critical">
+                  Critical
                 </option>
 
                 <option value="high">
-                  High — Major functionality affected
+                  High
                 </option>
 
-                <option value="critical">
-                  Critical — Severe production impact
+                <option value="medium">
+                  Medium
+                </option>
+
+                <option value="low">
+                  Low
                 </option>
               </select>
             </div>
 
-            <div className="mt-8 border-t border-zinc-800 pt-8">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-                  <FileCode2
-                    size={18}
-                    className="text-blue-400"
-                  />
-                </div>
 
-                <div>
-                  <label
-                    htmlFor="technicalContext"
-                    className="text-sm font-medium text-zinc-200"
-                  >
-                    Technical context
-                    <span className="ml-2 font-normal text-zinc-600">
-                      Optional
-                    </span>
-                  </label>
-
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
-                    Add logs, error messages, stack traces, API responses,
-                    or relevant code snippets.
-                  </p>
-                </div>
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-3">
+                Technical context
+              </label>
 
               <textarea
-                id="technicalContext"
                 value={technicalContext}
                 onChange={(event) =>
-                  setTechnicalContext(event.target.value)
+                  setTechnicalContext(
+                    event.target.value
+                  )
                 }
-                placeholder={`Example:
-
-TypeError: Cannot read properties of undefined
-
-POST /api/profile 500
-
-Error started after deploying version 2.4.0`}
-                rows={10}
-                className="mt-4 w-full resize-y rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 font-mono text-sm leading-6 text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-blue-500"
+                placeholder="Logs, stack traces, API responses, recent changes..."
+                rows={8}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-mono outline-none focus:border-blue-500 resize-none"
               />
             </div>
 
-            <div className="mt-8 flex items-center justify-end gap-3 border-t border-zinc-800 pt-6">
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="rounded-lg px-4 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-              >
-                Cancel
-              </button>
+          </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSubmitting && (
-                  <Loader2
-                    size={16}
-                    className="animate-spin"
-                  />
-                )}
 
-                {isSubmitting
-                  ? "Analyzing issue..."
-                  : "Create & analyze issue"}
-              </button>
+          {/* ERROR */}
+
+          {error && (
+            <div className="border border-red-500/20 bg-red-500/5 rounded-xl p-4 text-sm text-red-400">
+              {error}
             </div>
-          </form>
-        </div>
-      </main>
-    </div>
+          )}
+
+
+          {/* SUBMIT */}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={
+                submitting ||
+                loadingProjects ||
+                projects.length === 0
+              }
+              className="px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-zinc-200 transition disabled:opacity-40"
+            >
+              {submitting
+                ? "Creating & analyzing..."
+                : "Create & analyze issue"}
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </main>
   );
 }
