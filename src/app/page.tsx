@@ -21,59 +21,79 @@ interface Project {
   createdAt: string;
 }
 
+interface IssuesApiResponse {
+  success?: boolean;
+  count?: number;
+  issues?: Issue[];
+}
+
+interface ProjectsApiResponse {
+  success?: boolean;
+  count?: number;
+  projects?: Project[];
+}
+
 export default function HomePage() {
   const [issues, setIssues] = useState<Issue[]>([]);
-  const [projects, setProjects] =
-    useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
+        setError("");
 
-        const [
-          issuesResponse,
-          projectsResponse,
-        ] = await Promise.all([
-          fetch(
-            "http://localhost:5000/api/issues"
-          ),
-          fetch(
-            "http://localhost:5000/api/projects"
-          ),
-        ]);
+        const [issuesResponse, projectsResponse] =
+          await Promise.all([
+            fetch("http://localhost:5000/api/issues"),
+            fetch("http://localhost:5000/api/projects"),
+          ]);
 
-        if (
-          !issuesResponse.ok ||
-          !projectsResponse.ok
-        ) {
-          throw new Error(
-            "Failed to load dashboard"
-          );
+        if (!issuesResponse.ok || !projectsResponse.ok) {
+          throw new Error("Failed to load dashboard");
         }
 
-        const [
-          issuesData,
-          projectsData,
-        ] = await Promise.all([
-          issuesResponse.json(),
-          projectsResponse.json(),
-        ]);
+        const [issuesData, projectsData] =
+          await Promise.all([
+            issuesResponse.json(),
+            projectsResponse.json(),
+          ]);
 
-        setIssues(issuesData);
-        setProjects(projectsData);
+        /*
+         * Backend now returns:
+         *
+         * {
+         *   success: true,
+         *   count: 10,
+         *   issues: [...]
+         * }
+         *
+         * So we must store issuesData.issues,
+         * not the complete response object.
+         */
+
+        const normalizedIssues: Issue[] =
+          Array.isArray(issuesData)
+            ? issuesData
+            : (issuesData as IssuesApiResponse)?.issues || [];
+
+        const normalizedProjects: Project[] =
+          Array.isArray(projectsData)
+            ? projectsData
+            : (projectsData as ProjectsApiResponse)?.projects || [];
+
+        setIssues(normalizedIssues);
+        setProjects(normalizedProjects);
       } catch (error) {
-        console.error(error);
+        console.error("Dashboard error:", error);
 
-        setError(
-          "Unable to load dashboard data."
-        );
+        setIssues([]);
+        setProjects([]);
+
+        setError("Unable to load dashboard data.");
       } finally {
         setLoading(false);
       }
@@ -82,32 +102,38 @@ export default function HomePage() {
     fetchDashboard();
   }, []);
 
+  /*
+   * Dashboard statistics
+   *
+   * Array operations used:
+   *
+   * filter() → selects issues matching a condition
+   * length → counts them
+   *
+   * Time complexity:
+   * O(n)
+   *
+   * where n = number of issues.
+   */
+
   const stats = useMemo(() => {
-    const activeIssues =
-      issues.filter(
-        (issue) =>
-          issue.status !== "resolved"
-      ).length;
+    const activeIssues = issues.filter(
+      (issue) => issue.status !== "resolved"
+    ).length;
 
-    const resolvedIssues =
-      issues.filter(
-        (issue) =>
-          issue.status === "resolved"
-      ).length;
+    const resolvedIssues = issues.filter(
+      (issue) => issue.status === "resolved"
+    ).length;
 
-    const criticalIssues =
-      issues.filter(
-        (issue) =>
-          issue.priority === "critical"
-      ).length;
+    const criticalIssues = issues.filter(
+      (issue) => issue.priority === "critical"
+    ).length;
 
     const resolutionRate =
       issues.length === 0
         ? 0
         : Math.round(
-            (resolvedIssues /
-              issues.length) *
-              100
+            (resolvedIssues / issues.length) * 100
           );
 
     return {
@@ -119,27 +145,30 @@ export default function HomePage() {
     };
   }, [issues]);
 
+  /*
+   * Only display the five most recent issues.
+   *
+   * Since the backend already sorts by createdAt,
+   * slice() simply takes the first five records.
+   */
   const recentIssues = issues.slice(0, 5);
 
   return (
     <main className="min-h-screen bg-[#09090b] text-white">
-
       <div className="mx-auto max-w-7xl px-6 py-10">
 
-        {/* HEADER */}
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
 
         <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-
           <div>
-
             <div className="mb-3 flex items-center gap-2">
-
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
 
               <span className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
                 System operational
               </span>
-
             </div>
 
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
@@ -147,16 +176,13 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
-              Monitor issues, investigate failures and
-              use AI-assisted workflows to move from
-              report to resolution.
+              Monitor issues, investigate failures and use
+              AI-assisted workflows to move from report to
+              resolution.
             </p>
-
           </div>
 
-
           <div className="flex gap-3">
-
             <Link
               href="/projects"
               className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white"
@@ -170,22 +196,19 @@ export default function HomePage() {
             >
               + Report issue
             </Link>
-
           </div>
-
         </div>
 
-
-        {/* STATS */}
+        {/* =====================================================
+            STATS
+        ====================================================== */}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-          {/* TOTAL */}
+          {/* TOTAL ISSUES */}
 
           <div className="group rounded-2xl border border-zinc-800/80 bg-zinc-950 p-6 transition hover:border-zinc-700">
-
             <div className="mb-6 flex items-center justify-between">
-
               <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Total Issues
               </span>
@@ -193,28 +216,21 @@ export default function HomePage() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
                 ◇
               </span>
-
             </div>
 
             <p className="text-3xl font-semibold">
-              {loading
-                ? "—"
-                : stats.totalIssues}
+              {loading ? "—" : stats.totalIssues}
             </p>
 
             <p className="mt-2 text-xs text-zinc-600">
               All reported issues
             </p>
-
           </div>
 
-
-          {/* ACTIVE */}
+          {/* ACTIVE ISSUES */}
 
           <div className="group rounded-2xl border border-zinc-800/80 bg-zinc-950 p-6 transition hover:border-zinc-700">
-
             <div className="mb-6 flex items-center justify-between">
-
               <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Active
               </span>
@@ -222,28 +238,21 @@ export default function HomePage() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
                 ◌
               </span>
-
             </div>
 
             <p className="text-3xl font-semibold">
-              {loading
-                ? "—"
-                : stats.activeIssues}
+              {loading ? "—" : stats.activeIssues}
             </p>
 
             <p className="mt-2 text-xs text-zinc-600">
               Issues requiring attention
             </p>
-
           </div>
 
-
-          {/* RESOLUTION */}
+          {/* RESOLUTION RATE */}
 
           <div className="group rounded-2xl border border-zinc-800/80 bg-zinc-950 p-6 transition hover:border-zinc-700">
-
             <div className="mb-6 flex items-center justify-between">
-
               <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Resolution Rate
               </span>
@@ -251,7 +260,6 @@ export default function HomePage() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
                 ✓
               </span>
-
             </div>
 
             <p className="text-3xl font-semibold">
@@ -263,16 +271,12 @@ export default function HomePage() {
             <p className="mt-2 text-xs text-zinc-600">
               Resolved issues
             </p>
-
           </div>
 
-
-          {/* CRITICAL */}
+          {/* CRITICAL ISSUES */}
 
           <div className="group rounded-2xl border border-zinc-800/80 bg-zinc-950 p-6 transition hover:border-zinc-700">
-
             <div className="mb-6 flex items-center justify-between">
-
               <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Critical
               </span>
@@ -280,7 +284,6 @@ export default function HomePage() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
                 !
               </span>
-
             </div>
 
             <p className="text-3xl font-semibold">
@@ -292,25 +295,23 @@ export default function HomePage() {
             <p className="mt-2 text-xs text-zinc-600">
               High-risk issues
             </p>
-
           </div>
-
         </div>
 
-
-        {/* MAIN GRID */}
+        {/* =====================================================
+            MAIN GRID
+        ====================================================== */}
 
         <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
 
-
-          {/* RECENT ISSUES */}
+          {/* =================================================
+              RECENT ISSUES
+          ================================================== */}
 
           <section className="rounded-2xl border border-zinc-800/80 bg-zinc-950">
 
             <div className="flex items-center justify-between border-b border-zinc-800/80 px-6 py-5">
-
               <div>
-
                 <p className="text-xs font-medium uppercase tracking-wider text-zinc-600">
                   Activity
                 </p>
@@ -318,7 +319,6 @@ export default function HomePage() {
                 <h2 className="mt-1 text-lg font-semibold">
                   Recent investigations
                 </h2>
-
               </div>
 
               <Link
@@ -327,34 +327,38 @@ export default function HomePage() {
               >
                 View all →
               </Link>
-
             </div>
 
+            {/* ERROR */}
 
             {error ? (
-
               <div className="p-10 text-center">
-
                 <p className="text-sm text-red-400">
                   {error}
                 </p>
 
+                <p className="mt-2 text-xs text-zinc-600">
+                  Check that the backend server is running
+                  on port 5000.
+                </p>
               </div>
-
             ) : loading ? (
 
+              /* LOADING */
+
               <div className="p-10 text-center">
+                <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-white" />
 
                 <p className="text-sm text-zinc-600">
                   Loading activity...
                 </p>
-
               </div>
 
             ) : recentIssues.length === 0 ? (
 
-              <div className="p-12 text-center">
+              /* EMPTY */
 
+              <div className="p-12 text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-zinc-600">
                   ◇
                 </div>
@@ -367,15 +371,21 @@ export default function HomePage() {
                   Report your first issue to begin.
                 </p>
 
+                <Link
+                  href="/new-issue"
+                  className="mt-5 inline-flex rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black transition hover:bg-zinc-200"
+                >
+                  Report issue
+                </Link>
               </div>
 
             ) : (
 
-              <div>
+              /* ISSUE LIST */
 
+              <div>
                 {recentIssues.map(
                   (issue, index) => (
-
                     <Link
                       key={issue._id}
                       href={`/issues/${issue._id}`}
@@ -387,62 +397,78 @@ export default function HomePage() {
                       }`}
                     >
 
+                      {/* ICON */}
+
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-sm text-zinc-500 group-hover:border-blue-500/20 group-hover:bg-blue-500/10 group-hover:text-blue-400">
                         ◇
                       </div>
 
+                      {/* CONTENT */}
 
                       <div className="min-w-0 flex-1">
 
-                        <div className="flex items-center gap-2">
-
-                          <h3 className="truncate text-sm font-medium text-zinc-200 group-hover:text-white">
-                            {issue.title}
-                          </h3>
-
-                        </div>
+                        <h3 className="truncate text-sm font-medium text-zinc-200 group-hover:text-white">
+                          {issue.title}
+                        </h3>
 
                         <div className="mt-2 flex flex-wrap items-center gap-2">
 
-                          <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-500">
+                          {/* STATUS */}
+
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[10px] ${
+                              issue.status === "resolved"
+                                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                                : issue.status ===
+                                  "investigating"
+                                ? "border-blue-500/20 bg-blue-500/10 text-blue-400"
+                                : "border-zinc-800 bg-zinc-900 text-zinc-500"
+                            }`}
+                          >
                             {issue.status}
                           </span>
 
-                          <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-500">
+                          {/* PRIORITY */}
+
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[10px] ${
+                              issue.priority === "critical"
+                                ? "border-red-500/20 bg-red-500/10 text-red-400"
+                                : issue.priority === "high"
+                                ? "border-orange-500/20 bg-orange-500/10 text-orange-400"
+                                : "border-zinc-800 bg-zinc-900 text-zinc-500"
+                            }`}
+                          >
                             {issue.priority}
                           </span>
+
+                          {/* CATEGORY */}
 
                           {issue.category && (
                             <span className="text-[10px] text-zinc-600">
                               {issue.category}
                             </span>
                           )}
-
                         </div>
-
                       </div>
 
+                      {/* ARROW */}
 
-                      <span className="text-zinc-700 transition group-hover:text-blue-400">
+                      <span className="text-zinc-700 transition group-hover:translate-x-1 group-hover:text-blue-400">
                         →
                       </span>
-
                     </Link>
-
                   )
                 )}
-
               </div>
-
             )}
-
           </section>
 
-
-          {/* RIGHT COLUMN */}
+          {/* =================================================
+              RIGHT COLUMN
+          ================================================== */}
 
           <div className="space-y-6">
-
 
             {/* PROJECTS */}
 
@@ -451,7 +477,6 @@ export default function HomePage() {
               <div className="flex items-center justify-between border-b border-zinc-800/80 px-6 py-5">
 
                 <div>
-
                   <p className="text-xs font-medium uppercase tracking-wider text-zinc-600">
                     Workspace
                   </p>
@@ -459,20 +484,16 @@ export default function HomePage() {
                   <h2 className="mt-1 text-lg font-semibold">
                     Projects
                   </h2>
-
                 </div>
 
                 <span className="text-xs text-zinc-600">
                   {projects.length}
                 </span>
-
               </div>
-
 
               {projects.length === 0 ? (
 
                 <div className="p-7">
-
                   <p className="text-sm text-zinc-500">
                     No projects created yet.
                   </p>
@@ -483,7 +504,6 @@ export default function HomePage() {
                   >
                     Create a project →
                   </Link>
-
                 </div>
 
               ) : (
@@ -514,29 +534,24 @@ export default function HomePage() {
 
                           <p className="mt-1 truncate text-[11px] text-zinc-600">
                             {project.techStack
-                              .slice(0, 3)
+                              ?.slice(0, 3)
                               .join(" · ") ||
                               "No tech stack"}
                           </p>
 
                         </div>
 
-                        <span className="text-xs text-zinc-700">
+                        <span className="text-xs text-zinc-700 transition group-hover:text-blue-400">
                           →
                         </span>
 
                       </Link>
-
                     ))}
-
                 </div>
-
               )}
-
             </section>
 
-
-            {/* AI CARD */}
+            {/* AI ENGINE */}
 
             <section className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-blue-500/3 p-6">
 
@@ -567,17 +582,14 @@ export default function HomePage() {
                   </span>
 
                 </div>
-
               </div>
-
             </section>
-
           </div>
-
         </div>
 
-
-        {/* BOTTOM CTA */}
+        {/* =====================================================
+            BOTTOM CTA
+        ====================================================== */}
 
         <section className="mt-8 overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950">
 
@@ -608,11 +620,8 @@ export default function HomePage() {
             </Link>
 
           </div>
-
         </section>
-
       </div>
-
     </main>
   );
 }

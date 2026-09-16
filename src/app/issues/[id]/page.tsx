@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import ActivityTimeline from "@/components/ActivityTimeline";
 
 interface AIAnalysis {
   summary?: string;
@@ -56,6 +57,45 @@ export default function IssueDetailsPage() {
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] =
     useState("");
+
+  const [activityRefresh, setActivityRefresh] =
+    useState(0);
+
+  const recordActivity = async (
+    action: string,
+    message: string,
+    metadata: Record<string, unknown> = {}
+  ) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/issues/${issueId}/activity`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action,
+            message,
+            metadata,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          data.message || "Failed to record activity"
+        );
+      }
+
+      setActivityRefresh((value) => value + 1);
+    } catch (error) {
+      // Activity logging should not make a successful
+      // investigation save fail.
+      console.warn("Activity logging failed:", error);
+    }
+  };
 
   const fetchIssue = async () => {
     try {
@@ -169,6 +209,9 @@ export default function IssueDetailsPage() {
   ) => {
     if (!issue) return;
 
+    const previousStatus = issue.status;
+    const nextStatus = status || issue.status;
+
     try {
       setSaving(true);
       setError("");
@@ -211,6 +254,35 @@ export default function IssueDetailsPage() {
       }
 
       setIssue(data.issue);
+
+      const activityAction =
+        nextStatus === "resolved"
+          ? "ISSUE_RESOLVED"
+          : previousStatus === "open" &&
+              nextStatus === "investigating"
+          ? "INVESTIGATION_STARTED"
+          : "INVESTIGATION_UPDATED";
+
+      const activityMessage =
+        nextStatus === "resolved"
+          ? "Issue was marked as resolved."
+          : activityAction === "INVESTIGATION_STARTED"
+          ? "Developer started investigating the issue."
+          : "Developer saved investigation progress.";
+
+      await recordActivity(
+        activityAction,
+        activityMessage,
+        {
+          status: nextStatus,
+          completedSteps: (
+            issue.investigation?.steps || []
+          ).filter((step) => step.completed).length,
+          totalSteps: (
+            issue.investigation?.steps || []
+          ).length,
+        }
+      );
 
       setSaveMessage(
         status === "resolved"
@@ -804,6 +876,14 @@ export default function IssueDetailsPage() {
 
             </div>
 
+
+            {/* ACTIVITY TIMELINE */}
+
+            <ActivityTimeline
+              key={`${issueId}-${activityRefresh}`}
+              issueId={issueId}
+            />
+
           </div>
 
 
@@ -818,7 +898,8 @@ export default function IssueDetailsPage() {
 
               <div className="mb-6 flex items-center justify-between">
 
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] 
+                text-zinc-600">
                   AI confidence
                 </p>
 
