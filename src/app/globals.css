@@ -1,23 +1,788 @@
 @import "tailwindcss";
 
+/* =========================================
+   DEVTRAXE DESIGN TOKENS
+   ========================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09090b;
+  --foreground: #f4f4f5;
+
+  --surface: #0d0d10;
+  --surface-raised: #111114;
+
+  --border: #27272a;
+  --border-soft: rgba(255, 255, 255, 0.07);
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-subtle: #52525b;
+
+  --accent: #3b82f6;
+  --accent-light: #60a5fa;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
 }
+
+
+/* =========================================
+   BASE
+   ========================================= */
 
 * {
   box-sizing: border-box;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
+html {
+  background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  margin: 0;
+  padding: 0;
+
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at 75% -10%,
+      rgba(59, 130, 246, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 10% 100%,
+      rgba(59, 130, 246, 0.035),
+      transparent 30%
+    ),
+    #09090b;
+
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+
+/* =========================================
+   SELECTION
+   ========================================= */
+
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #ffffff;
+}
+
+
+/* =========================================
+   SCROLLBAR
+   ========================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+
+/* =========================================
+   FORM ELEMENTS
+   ========================================= */
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  color-scheme: dark;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #52525b;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+
+/* =========================================
+   LINKS
+   ========================================= */
+
+a {
+  text-decoration: none;
+}
+
+
+/* =========================================
+   DEVTRAXE GLOBAL UTILITIES
+   ========================================= */
+
+.devtraxe-surface {
+  background: rgba(13, 13, 16, 0.8);
+
+  border: 1px solid var(--border-soft);
+}
+
+.devtraxe-card {
+  background: #0d0d10;
+
+  border: 1px solid rgba(255, 255, 255, 0.065);
+
+  border-radius: 16px;
+
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.devtraxe-card:hover {
+  border-color: rgba(255, 255, 255, 0.11);
+
+  background: #101014;
+}
+
+
+/* =========================================
+   SUBTLE PAGE GRID
+   ========================================= */
+
+.devtraxe-grid {
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px
+    );
+
+  background-size: 48px 48px;
+}
+
+
+/* =========================================
+   GLOW
+   ========================================= */
+
+.devtraxe-glow {
+  pointer-events: none;
+
+  position: absolute;
+
+  width: 420px;
+  height: 420px;
+
+  border-radius: 9999px;
+
+  background: rgba(37, 99, 235, 0.055);
+
+  filter: blur(100px);
+
+  opacity: 0.8;
+}
+
+
+/* =========================================
+   STATUS DOT
+   ========================================= */
+
+.devtraxe-status-dot {
+  position: relative;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 999px;
+
+  background: var(--success);
+
+  box-shadow:
+    0 0 0 3px
+      rgba(52, 211, 153, 0.08),
+    0 0 14px
+      rgba(52, 211, 153, 0.35);
+}
+
+
+/* =========================================
+   BUTTON MICRO INTERACTION
+   ========================================= */
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+
+/* =========================================
+   STARTUP EXPERIENCE
+   ========================================= */
+
+.startup-exit {
+  animation:
+    startupScreenExit 0.55s
+    cubic-bezier(0.76, 0, 0.24, 1)
+    forwards;
+}
+
+.startup-content-exit {
+  animation:
+    startupContentExit 0.45s
+    ease-in forwards;
+}
+
+
+/* =========================================
+   STARTUP LOGO
+   ========================================= */
+
+.startup-logo {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 58px;
+  height: 58px;
+
+  animation:
+    startupLogoEnter 0.8s
+    cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
+}
+
+.startup-logo-ring {
+  position: absolute;
+
+  inset: 0;
+
+  border-radius: 16px;
+
+  border: 1px solid
+    rgba(59, 130, 246, 0.35);
+
+  background:
+    rgba(59, 130, 246, 0.05);
+
+  box-shadow:
+    0 0 40px
+      rgba(59, 130, 246, 0.14),
+    inset 0 0 25px
+      rgba(59, 130, 246, 0.05);
+
+  animation:
+    startupRingPulse 2s
+    ease-in-out infinite;
+}
+
+.startup-logo-inner {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(59, 130, 246, 0.15),
+      rgba(59, 130, 246, 0.03)
+    );
+
+  color: #60a5fa;
+
+  font-size: 20px;
+
+  opacity: 0;
+
+  animation:
+    startupLogoSymbol 0.7s
+    0.25s
+    cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
+}
+
+
+/* =========================================
+   STARTUP TITLE
+   ========================================= */
+
+.startup-title {
+  margin: 0;
+
+  font-size:
+    clamp(2.7rem, 7vw, 4.5rem);
+
+  line-height: 1;
+
+  font-weight: 700;
+
+  letter-spacing: 0.18em;
+
+  color: #f4f4f5;
+
+  opacity: 0;
+
+  transform: translateY(100%);
+
+  animation:
+    startupTitleEnter 0.8s
+    0.35s
+    cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
+}
+
+
+/* =========================================
+   STARTUP AI
+   ========================================= */
+
+.startup-ai {
+  margin: 0;
+
+  font-size: 0.8rem;
+
+  line-height: 1;
+
+  font-weight: 500;
+
+  letter-spacing: 0.65em;
+
+  padding-left: 0.65em;
+
+  color: #60a5fa;
+
+  opacity: 0;
+
+  transform: translateY(100%);
+
+  animation:
+    startupTextEnter 0.6s
+    0.65s
+    cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
+}
+
+
+/* =========================================
+   STARTUP TAGLINE
+   ========================================= */
+
+.startup-tagline {
+  margin: 0;
+
+  font-size: 0.62rem;
+
+  line-height: 1;
+
+  font-weight: 500;
+
+  letter-spacing: 0.32em;
+
+  color: #52525b;
+
+  opacity: 0;
+
+  transform: translateY(100%);
+
+  animation:
+    startupTextEnter 0.6s
+    0.9s
+    cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
+}
+
+
+/* =========================================
+   STARTUP PROGRESS
+   ========================================= */
+
+.startup-progress {
+  height: 100%;
+
+  width: 0%;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #2563eb,
+      #60a5fa
+    );
+
+  box-shadow:
+    0 0 14px
+      rgba(59, 130, 246, 0.55);
+
+  animation:
+    startupProgress 1.5s
+    0.4s
+    cubic-bezier(0.65, 0, 0.35, 1)
+    forwards;
+}
+
+
+/* =========================================
+   STARTUP STATUS
+   ========================================= */
+
+.startup-status {
+  opacity: 0;
+
+  animation:
+    startupStatusEnter 0.5s
+    1s
+    ease-out
+    forwards;
+}
+
+
+/* =========================================
+   STARTUP BACKGROUND GLOW
+   ========================================= */
+
+.startup-glow {
+  position: absolute;
+
+  border-radius: 9999px;
+
+  filter: blur(90px);
+
+  pointer-events: none;
+}
+
+.startup-glow-one {
+  width: 420px;
+  height: 420px;
+
+  left: 50%;
+  top: 35%;
+
+  transform:
+    translate(-50%, -50%);
+
+  background:
+    rgba(37, 99, 235, 0.07);
+
+  animation:
+    startupGlow 3s
+    ease-in-out infinite;
+}
+
+.startup-glow-two {
+  width: 260px;
+  height: 260px;
+
+  left: 15%;
+  bottom: 10%;
+
+  background:
+    rgba(96, 165, 250, 0.025);
+}
+
+
+/* =========================================
+   STARTUP GRID
+   ========================================= */
+
+.startup-grid {
+  position: absolute;
+
+  inset: 0;
+
+  opacity: 0.16;
+
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    );
+
+  background-size: 50px 50px;
+
+  pointer-events: none;
+}
+
+
+/* =========================================
+   STARTUP ANIMATIONS
+   ========================================= */
+
+@keyframes startupLogoEnter {
+  0% {
+    opacity: 0;
+
+    transform:
+      translateY(20px)
+      scale(0.75);
+  }
+
+  100% {
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+@keyframes startupLogoSymbol {
+  0% {
+    opacity: 0;
+
+    transform:
+      scale(0.5)
+      rotate(-20deg);
+  }
+
+  100% {
+    opacity: 1;
+
+    transform:
+      scale(1)
+      rotate(0);
+  }
+}
+
+@keyframes startupRingPulse {
+  0%,
+  100% {
+    transform: scale(1);
+
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.08);
+
+    opacity: 1;
+  }
+}
+
+@keyframes startupTitleEnter {
+  0% {
+    opacity: 0;
+
+    transform:
+      translateY(100%);
+  }
+
+  100% {
+    opacity: 1;
+
+    transform:
+      translateY(0);
+  }
+}
+
+@keyframes startupTextEnter {
+  0% {
+    opacity: 0;
+
+    transform:
+      translateY(100%);
+  }
+
+  100% {
+    opacity: 1;
+
+    transform:
+      translateY(0);
+  }
+}
+
+@keyframes startupProgress {
+  0% {
+    width: 0%;
+  }
+
+  70% {
+    width: 78%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes startupStatusEnter {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes startupGlow {
+  0%,
+  100% {
+    opacity: 0.6;
+
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  50% {
+    opacity: 1;
+
+    transform:
+      translate(-50%, -50%)
+      scale(1.12);
+  }
+}
+
+@keyframes startupScreenExit {
+  0% {
+    opacity: 1;
+
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform: scale(1.025);
+  }
+}
+
+@keyframes startupContentExit {
+  0% {
+    opacity: 1;
+
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform: translateY(-15px);
+  }
+}
+
+
+/* =========================================
+   ACCESSIBILITY
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 1023px) {
+  .startup-title {
+    font-size: 3rem;
+  }
+
+  .startup-tagline {
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .startup-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .startup-logo-inner {
+    width: 38px;
+    height: 38px;
+  }
+
+  .startup-title {
+    font-size: 2.4rem;
+    letter-spacing: 0.13em;
+  }
+
+  .startup-ai {
+    font-size: 0.7rem;
+  }
+
+  .startup-tagline {
+    font-size: 0.48rem;
+    letter-spacing: 0.22em;
+  }
+
+  .startup-progress {
+    animation-duration: 1.35s;
+  }
+}
+@media (max-width: 1023px) {
+  body {
+    padding-top: 64px;
+  }
 }

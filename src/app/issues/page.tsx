@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+
 import IssueCard from "../../components/IssueCard";
 
 interface Issue {
@@ -16,12 +17,21 @@ interface Issue {
 
 export default function IssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const [search, setSearch] =
+    useState("");
+
+  const [statusFilter, setStatusFilter] =
+    useState("all");
+
+  const [priorityFilter, setPriorityFilter] =
+    useState("all");
 
   const fetchIssues = async () => {
     try {
@@ -33,15 +43,20 @@ export default function IssuesPage() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch issues");
+        throw new Error(
+          "Failed to fetch issues"
+        );
       }
 
       const data = await response.json();
 
       setIssues(data);
-    } catch (err) {
-      console.error(err);
-      setError("Unable to load issues.");
+    } catch (error) {
+      console.error(error);
+
+      setError(
+        "Unable to load issues."
+      );
     } finally {
       setLoading(false);
     }
@@ -52,9 +67,8 @@ export default function IssuesPage() {
   }, []);
 
   const filteredIssues = useMemo(() => {
-    const normalizedSearch = search
-      .trim()
-      .toLowerCase();
+    const normalizedSearch =
+      search.trim().toLowerCase();
 
     return issues.filter((issue) => {
       const matchesSearch =
@@ -90,60 +104,201 @@ export default function IssuesPage() {
     priorityFilter,
   ]);
 
+  const stats = useMemo(() => {
+    return {
+      total: issues.length,
+
+      open: issues.filter(
+        (issue) =>
+          issue.status === "open"
+      ).length,
+
+      investigating: issues.filter(
+        (issue) =>
+          issue.status === "investigating"
+      ).length,
+
+      resolved: issues.filter(
+        (issue) =>
+          issue.status === "resolved"
+      ).length,
+
+      critical: issues.filter(
+        (issue) =>
+          issue.priority === "critical"
+      ).length,
+    };
+  }, [issues]);
+
   return (
     <main className="min-h-screen bg-[#09090b] text-white">
-      <div className="max-w-7xl mx-auto px-6 py-10">
 
-        {/* Header */}
+      <div className="mx-auto max-w-7xl px-6 py-10">
 
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
+
+        {/* HEADER */}
+
+        <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+
           <div>
-            <p className="text-sm text-blue-400 mb-2">
-              DEVTRAXE AI
-            </p>
 
-            <h1 className="text-3xl font-semibold tracking-tight">
+            <div className="mb-3 flex items-center gap-2">
+
+              <span className="text-xs font-medium uppercase tracking-[0.18em] text-blue-400">
+                Issue Management
+              </span>
+
+              <span className="h-1 w-1 rounded-full bg-zinc-700" />
+
+              <span className="text-xs text-zinc-600">
+                {stats.total} total
+              </span>
+
+            </div>
+
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
               Issues
             </h1>
 
-            <p className="text-zinc-500 mt-2">
-              Investigate and manage reported software issues.
+            <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-500">
+              Investigate software failures, track
+              developer findings and resolve issues
+              with AI-assisted workflows.
             </p>
+
           </div>
+
 
           <Link
             href="/new-issue"
-            className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-white text-black font-medium hover:bg-zinc-200 transition"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black shadow-lg shadow-black/10 transition hover:bg-zinc-200"
           >
-            + Report issue
+            <span className="text-base">
+              +
+            </span>
+
+            Report issue
           </Link>
+
         </div>
 
-        {/* Filters */}
 
-        <div className="border border-zinc-800 rounded-2xl bg-zinc-950 p-4 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_180px] gap-3">
+        {/* METRICS */}
 
-            {/* Search */}
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5">
 
-            <input
-              type="text"
-              placeholder="Search issues..."
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-blue-500 transition"
-            />
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-950 px-4 py-4">
 
-            {/* Status */}
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Total
+            </p>
+
+            <p className="mt-2 text-xl font-semibold">
+              {loading ? "—" : stats.total}
+            </p>
+
+          </div>
+
+
+          <div className="rounded-xl border border-blue-500/10 bg-blue-500/2.5 px-4 py-4">
+
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Open
+            </p>
+
+            <p className="mt-2 text-xl font-semibold text-blue-400">
+              {loading ? "—" : stats.open}
+            </p>
+
+          </div>
+
+
+          <div className="rounded-xl border border-purple-500/10 bg-purple-500/2.5 px-4 py-4">
+
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Investigating
+            </p>
+
+            <p className="mt-2 text-xl font-semibold text-purple-400">
+              {loading
+                ? "—"
+                : stats.investigating}
+            </p>
+
+          </div>
+
+
+          <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/2.5 px-4 py-4">
+
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Resolved
+            </p>
+
+            <p className="mt-2 text-xl font-semibold text-emerald-400">
+              {loading
+                ? "—"
+                : stats.resolved}
+            </p>
+
+          </div>
+
+
+          <div className="rounded-xl border border-red-500/10 bg-red-500/2.5 px-4 py-4">
+
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Critical
+            </p>
+
+            <p className="mt-2 text-xl font-semibold text-red-400">
+              {loading
+                ? "—"
+                : stats.critical}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        {/* FILTER BAR */}
+
+        <section className="mb-7 rounded-2xl border border-zinc-800/80 bg-zinc-950 p-3">
+
+          <div className="flex flex-col gap-3 lg:flex-row">
+
+            {/* SEARCH */}
+
+            <div className="relative flex-1">
+
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-zinc-600">
+                ⌕
+              </span>
+
+              <input
+                type="text"
+                value={search}
+                onChange={(event) =>
+                  setSearch(
+                    event.target.value
+                  )
+                }
+                placeholder="Search by title, description or category..."
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none transition focus:border-blue-500/40 focus:bg-zinc-900"
+              />
+
+            </div>
+
+
+            {/* STATUS */}
 
             <select
               value={statusFilter}
               onChange={(event) =>
-                setStatusFilter(event.target.value)
+                setStatusFilter(
+                  event.target.value
+                )
               }
-              className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 outline-none focus:border-blue-500 transition"
+              className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-sm text-zinc-400 outline-none transition focus:border-blue-500/40"
             >
               <option value="all">
                 All statuses
@@ -162,14 +317,17 @@ export default function IssuesPage() {
               </option>
             </select>
 
-            {/* Priority */}
+
+            {/* PRIORITY */}
 
             <select
               value={priorityFilter}
               onChange={(event) =>
-                setPriorityFilter(event.target.value)
+                setPriorityFilter(
+                  event.target.value
+                )
               }
-              className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 outline-none focus:border-blue-500 transition"
+              className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-sm text-zinc-400 outline-none transition focus:border-blue-500/40"
             >
               <option value="all">
                 All priorities
@@ -191,99 +349,150 @@ export default function IssuesPage() {
                 Low
               </option>
             </select>
-          </div>
-        </div>
 
-        {/* Result count */}
+          </div>
+
+        </section>
+
+
+        {/* RESULTS HEADER */}
 
         {!loading && !error && (
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-sm text-zinc-500">
-              Showing{" "}
-              <span className="text-zinc-300">
-                {filteredIssues.length}
-              </span>{" "}
-              of{" "}
-              <span className="text-zinc-300">
-                {issues.length}
-              </span>{" "}
-              issues
-            </p>
+          <div className="mb-5 flex items-center justify-between">
+
+            <div>
+
+              <p className="text-sm text-zinc-500">
+                Showing{" "}
+                <span className="font-medium text-zinc-300">
+                  {filteredIssues.length}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-zinc-300">
+                  {issues.length}
+                </span>{" "}
+                issues
+              </p>
+
+            </div>
 
             <button
               onClick={fetchIssues}
-              className="text-sm text-zinc-400 hover:text-white transition"
+              className="rounded-lg px-3 py-2 text-xs text-zinc-500 transition hover:bg-zinc-900 hover:text-white"
             >
-              Refresh
+              ↻ Refresh
             </button>
+
           </div>
         )}
 
-        {/* Loading */}
+
+        {/* LOADING */}
 
         {loading && (
-          <div className="border border-zinc-800 rounded-2xl p-10 text-center">
-            <p className="text-zinc-500">
-              Loading issues...
-            </p>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+
+            {[1, 2, 3, 4].map(
+              (item) => (
+                <div
+                  key={item}
+                  className="h-64 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-950"
+                />
+              )
+            )}
+
           </div>
         )}
 
-        {/* Error */}
+
+        {/* ERROR */}
 
         {!loading && error && (
-          <div className="border border-red-500/20 bg-red-500/5 rounded-2xl p-8 text-center">
-            <p className="text-red-400 mb-4">
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/2.5 p-10 text-center">
+
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+              !
+            </div>
+
+            <h2 className="font-medium text-zinc-200">
+              Unable to load issues
+            </h2>
+
+            <p className="mt-2 text-sm text-zinc-600">
               {error}
             </p>
 
             <button
               onClick={fetchIssues}
-              className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium"
+              className="mt-5 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-black hover:bg-zinc-200"
             >
               Try again
             </button>
+
           </div>
         )}
 
-        {/* Empty */}
+
+        {/* EMPTY */}
 
         {!loading &&
           !error &&
           filteredIssues.length === 0 && (
-            <div className="border border-zinc-800 rounded-2xl p-12 text-center">
-              <div className="text-3xl mb-4">
+
+            <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-16 text-center">
+
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-xl text-zinc-600">
                 ◇
               </div>
 
-              <h2 className="text-lg font-medium mb-2">
-                No issues found
+              <h2 className="text-lg font-semibold text-zinc-200">
+                No matching issues
               </h2>
 
-              <p className="text-sm text-zinc-500">
-                Try changing your search or filters.
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-zinc-600">
+                No issues match your current search
+                and filters. Try changing the filters
+                or report a new issue.
               </p>
+
+              <Link
+                href="/new-issue"
+                className="mt-6 inline-flex rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-zinc-200"
+              >
+                Report an issue
+              </Link>
+
             </div>
           )}
 
-        {/* Issues */}
+
+        {/* ISSUE GRID */}
 
         {!loading &&
           !error &&
           filteredIssues.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {filteredIssues.map((issue) => (
-                <Link
-                  key={issue._id}
-                  href={`/issues/${issue._id}`}
-                  className="block"
-                >
-                  <IssueCard issue={issue} />
-                </Link>
-              ))}
+
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+
+              {filteredIssues.map(
+                (issue) => (
+                  <Link
+                    key={issue._id}
+                    href={`/issues/${issue._id}`}
+                    className="block"
+                  >
+                    <IssueCard
+                      issue={issue}
+                    />
+                  </Link>
+                )
+              )}
+
             </div>
           )}
+
       </div>
+
     </main>
   );
 }

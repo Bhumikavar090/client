@@ -13,102 +13,175 @@ interface IssueCardProps {
 export default function IssueCard({
   issue,
 }: IssueCardProps) {
-  const priorityClasses = {
-    critical:
-      "bg-red-500/10 text-red-400 border-red-500/20",
+  const priorityConfig = {
+    critical: {
+      label: "Critical",
+      className:
+        "border-red-500/20 bg-red-500/[0.06] text-red-400",
+      dot: "bg-red-400",
+    },
 
-    high:
-      "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    high: {
+      label: "High",
+      className:
+        "border-orange-500/20 bg-orange-500/[0.06] text-orange-400",
+      dot: "bg-orange-400",
+    },
 
-    medium:
-      "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    medium: {
+      label: "Medium",
+      className:
+        "border-yellow-500/20 bg-yellow-500/[0.06] text-yellow-400",
+      dot: "bg-yellow-400",
+    },
 
-    low:
-      "bg-zinc-900 text-zinc-400 border-zinc-800",
+    low: {
+      label: "Low",
+      className:
+        "border-zinc-700 bg-zinc-900 text-zinc-400",
+      dot: "bg-zinc-500",
+    },
   };
 
-  const statusClasses = {
-    open:
-      "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  const statusConfig = {
+    open: {
+      label: "Open",
+      className:
+        "border-blue-500/20 bg-blue-500/[0.06] text-blue-400",
+    },
 
-    investigating:
-      "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    investigating: {
+      label: "Investigating",
+      className:
+        "border-purple-500/20 bg-purple-500/[0.06] text-purple-400",
+    },
 
-    resolved:
-      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    resolved: {
+      label: "Resolved",
+      className:
+        "border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400",
+    },
   };
 
-  const priorityClass =
-    priorityClasses[
-      issue.priority as keyof typeof priorityClasses
-    ] ||
-    "bg-zinc-900 text-zinc-400 border-zinc-800";
+  const priorityData =
+    priorityConfig[
+      issue.priority as keyof typeof priorityConfig
+    ] || priorityConfig.low;
 
-  const statusClass =
-    statusClasses[
-      issue.status as keyof typeof statusClasses
-    ] ||
-    "bg-zinc-900 text-zinc-400 border-zinc-800";
+  const statusData =
+    statusConfig[
+      issue.status as keyof typeof statusConfig
+    ] || statusConfig.open;
 
-  const date = new Date(
+  const formattedDate = new Date(
     issue.createdAt
-  ).toLocaleDateString();
+  ).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
-    <article className="group h-full border border-zinc-800 bg-zinc-950 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-900/60 transition-all duration-200">
+    <article className="group relative h-full overflow-hidden rounded-2xl border border-zinc-800/80 bg-[#0d0d10] p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-zinc-700 hover:bg-[#101014] hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
 
-      {/* Top */}
+      {/* TOP ACCENT */}
 
-      <div className="flex items-start justify-between gap-4 mb-5">
+      <div
+        className={`absolute left-0 top-0 h-px w-0 transition-all duration-300 group-hover:w-full ${
+          issue.priority === "critical"
+            ? "bg-red-400"
+            : issue.priority === "high"
+            ? "bg-orange-400"
+            : "bg-blue-400"
+        }`}
+      />
+
+
+      {/* HEADER */}
+
+      <div className="mb-5 flex items-start justify-between gap-4">
 
         <div className="flex flex-wrap gap-2">
+
           <span
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${priorityClass}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${priorityData.className}`}
           >
-            {issue.priority}
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${priorityData.dot}`}
+            />
+
+            {priorityData.label}
           </span>
 
           <span
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusClass}`}
+            className={`rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusData.className}`}
           >
-            {issue.status}
+            {statusData.label}
           </span>
 
-          {issue.category && (
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-zinc-800 bg-zinc-900 text-zinc-500">
-              {issue.category}
-            </span>
-          )}
         </div>
 
-        <span className="text-xs text-zinc-600 whitespace-nowrap">
-          {date}
+        <span className="whitespace-nowrap text-[11px] text-zinc-600">
+          {formattedDate}
         </span>
+
       </div>
 
-      {/* Title */}
 
-      <h2 className="text-lg font-semibold text-zinc-100 group-hover:text-white transition-colors mb-3">
+      {/* TITLE */}
+
+      <h2 className="mb-3 line-clamp-2 text-[17px] font-semibold leading-7 tracking-tight text-zinc-100 transition-colors group-hover:text-white">
         {issue.title}
       </h2>
 
-      {/* Description */}
 
-      <p className="text-sm text-zinc-500 leading-6 line-clamp-3">
+      {/* DESCRIPTION */}
+
+      <p className="line-clamp-3 text-sm leading-6 text-zinc-500">
         {issue.description}
       </p>
 
-      {/* Footer */}
 
-      <div className="flex items-center justify-between mt-6 pt-5 border-t border-zinc-800">
-        <span className="text-xs text-zinc-600">
-          Issue ID: {issue._id.slice(-8)}
-        </span>
+      {/* CATEGORY */}
 
-        <span className="text-sm text-zinc-500 group-hover:text-blue-400 transition">
-          Investigate →
-        </span>
+      <div className="mt-5 min-h-6">
+
+        {issue.category ? (
+          <span className="inline-flex items-center gap-2 text-[11px] text-zinc-500">
+
+            <span className="h-1.5 w-1.5 rounded-full bg-zinc-700" />
+
+            {issue.category}
+
+          </span>
+        ) : (
+          <span className="text-[11px] text-zinc-700">
+            Uncategorized
+          </span>
+        )}
+
       </div>
+
+
+      {/* FOOTER */}
+
+      <div className="mt-6 flex items-center justify-between border-t border-zinc-800/80 pt-5">
+
+        <div className="flex items-center gap-2">
+
+          <span className="font-mono text-[10px] text-zinc-700">
+            #{issue._id.slice(-8)}
+          </span>
+
+        </div>
+
+        <span className="flex items-center gap-2 text-xs font-medium text-zinc-600 transition-all group-hover:gap-3 group-hover:text-blue-400">
+          Investigate
+          <span>→</span>
+        </span>
+
+      </div>
+
     </article>
   );
 }
