@@ -2,108 +2,156 @@
 
 import { useState } from "react";
 import FindingCard from "./FindingCard";
-import FindingForm from "./FindingForm";
 
 interface Finding {
-  id: string;
-  type: string;
   title: string;
+  type:
+    | "OBSERVATION"
+    | "API_RESPONSE"
+    | "LOG"
+    | "CODE_REFERENCE"
+    | "DATABASE"
+    | "NOTE";
   description: string;
-  evidence?: string;
+  evidence: string;
   createdAt: string;
 }
 
-interface FindingsPanelProps {
-  initialFindings?: Finding[];
-  onChange?: (findings: Finding[]) => void;
+interface FindingPanelProps {
+  findings: Finding[];
+  onAdd?: (finding: Finding) => void;
 }
 
-export default function FindingsPanel({
-  initialFindings = [],
-  onChange,
-}: FindingsPanelProps) {
-  const [findings, setFindings] =
-    useState<Finding[]>(initialFindings);
+const TYPES: Finding["type"][] = [
+  "OBSERVATION",
+  "API_RESPONSE",
+  "LOG",
+  "CODE_REFERENCE",
+  "DATABASE",
+  "NOTE",
+];
 
-  const [showForm, setShowForm] = useState(false);
+export default function FindingPanel({
+  findings,
+  onAdd,
+}: FindingPanelProps) {
+  const [title, setTitle] = useState("");
+  const [type, setType] =
+    useState<Finding["type"]>("OBSERVATION");
+  const [description, setDescription] = useState("");
+  const [evidence, setEvidence] = useState("");
 
-  function addFinding(finding: Finding) {
-    const updated = [finding, ...findings];
+  const addFinding = () => {
+    if (!title.trim() || !description.trim()) {
+      return;
+    }
 
-    setFindings(updated);
-    onChange?.(updated);
-    setShowForm(false);
-  }
+    const finding: Finding = {
+      title: title.trim(),
+      type,
+      description: description.trim(),
+      evidence: evidence.trim(),
+      createdAt: new Date().toISOString(),
+    };
 
-  function deleteFinding(id: string) {
-    const updated = findings.filter(
-      (finding) => finding.id !== id
-    );
+    onAdd?.(finding);
 
-    setFindings(updated);
-    onChange?.(updated);
-  }
+    setTitle("");
+    setDescription("");
+    setEvidence("");
+    setType("OBSERVATION");
+  };
 
   return (
-    <section className="space-y-5">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-zinc-600">
-            Investigation
-          </p>
+    <section className="rounded-2xl border border-zinc-800/80 bg-zinc-950 p-7">
+      <div className="mb-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+          Evidence collection
+        </p>
 
-          <h2 className="mt-1 text-xl font-semibold text-white">
-            Findings
-          </h2>
+        <h2 className="mt-2 text-xl font-semibold text-zinc-100">
+          Investigation findings
+        </h2>
 
-          <p className="mt-1 text-sm text-zinc-500">
-            Evidence discovered during investigation.
-          </p>
-        </div>
-
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:border-zinc-500 hover:bg-zinc-800"
-          >
-            + Add Finding
-          </button>
-        )}
+        <p className="mt-2 text-sm leading-6 text-zinc-600">
+          Record individual pieces of evidence discovered during
+          debugging.
+        </p>
       </div>
-
-      {showForm && (
-        <FindingForm
-          onAdd={addFinding}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
-
-      {!showForm && findings.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-zinc-800 p-10 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-            +
-          </div>
-
-          <h3 className="mt-4 text-sm font-medium text-zinc-300">
-            No findings yet
-          </h3>
-
-          <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-600">
-            Record logs, API responses, code references,
-            database results and observations as you investigate.
-          </p>
-        </div>
-      )}
 
       <div className="space-y-4">
-        {findings.map((finding) => (
-          <FindingCard
-            key={finding.id}
-            finding={finding}
-            onDelete={deleteFinding}
-          />
-        ))}
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Finding title"
+          className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-sm text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-blue-500/40"
+        />
+
+        <select
+          value={type}
+          onChange={(event) =>
+            setType(event.target.value as Finding["type"])
+          }
+          className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-sm text-zinc-300 outline-none focus:border-blue-500/40"
+        >
+          {TYPES.map((item) => (
+            <option key={item} value={item}>
+              {item.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
+
+        <textarea
+          value={description}
+          onChange={(event) =>
+            setDescription(event.target.value)
+          }
+          placeholder="What did you discover?"
+          rows={4}
+          className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-sm leading-6 text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-blue-500/40"
+        />
+
+        <textarea
+          value={evidence}
+          onChange={(event) =>
+            setEvidence(event.target.value)
+          }
+          placeholder="Paste relevant log, API response, query result, stack trace, or other evidence..."
+          rows={5}
+          className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 font-mono text-xs leading-6 text-zinc-400 outline-none placeholder:text-zinc-700 focus:border-blue-500/40"
+        />
+
+        <button
+          type="button"
+          onClick={addFinding}
+          disabled={!title.trim() || !description.trim()}
+          className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-2.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          + Add finding
+        </button>
       </div>
+
+      {findings.length > 0 && (
+        <div className="mt-8 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+              Recorded findings
+            </p>
+
+            <span className="text-[10px] text-zinc-700">
+              {findings.length}{" "}
+              {findings.length === 1 ? "finding" : "findings"}
+            </span>
+          </div>
+
+          {findings.map((finding, index) => (
+            <FindingCard
+              key={`${finding.createdAt}-${index}`}
+              finding={finding}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

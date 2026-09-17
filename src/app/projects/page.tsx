@@ -318,7 +318,7 @@ export default function ProjectsPage() {
                 onChange={(event) =>
                   setName(event.target.value)
                 }
-                placeholder="e.g. DevTraxe AI"
+                placeholder="e.g. DevTrace AI"
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-sm text-zinc-200 outline-none transition placeholder:text-zinc-700 focus:border-blue-500/40"
               />
 

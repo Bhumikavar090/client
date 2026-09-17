@@ -78,7 +78,7 @@ export default function StartupScreen({
         <div className="mt-7 overflow-hidden">
 
           <h1 className="startup-title">
-            DEVTRAXE
+            DEVTRACE
           </h1>
 
         </div>

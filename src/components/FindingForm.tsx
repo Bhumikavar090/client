@@ -1,164 +1,135 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 
-interface Finding {
-  id: string;
-  type: string;
-  title: string;
-  description: string;
-  evidence?: string;
-  createdAt: string;
+interface AIResult {
+  rootCause?: string;
+  evidenceAssessment?: string;
+  nextAction?: string;
+  resolutionConfidence?: number;
+  sufficientEvidence?: boolean;
 }
 
 interface FindingFormProps {
-  onAdd: (finding: Finding) => void;
-  onCancel?: () => void;
+  issueId: string;
+  initialFindings?: string;
+  onAnalysisComplete?: (result: AIResult) => void;
 }
 
-const findingTypes = [
-  ["OBSERVATION", "Observation"],
-  ["API_RESPONSE", "API Response"],
-  ["LOG", "Log"],
-  ["CODE_REFERENCE", "Code Reference"],
-  ["DATABASE", "Database"],
-  ["NOTE", "Developer Note"],
-];
-
 export default function FindingForm({
-  onAdd,
-  onCancel,
+  issueId,
+  initialFindings = "",
+  onAnalysisComplete,
 }: FindingFormProps) {
-  const [type, setType] = useState("OBSERVATION");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [evidence, setEvidence] = useState("");
+  const [findings, setFindings] = useState(initialFindings);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-
-    if (!title.trim() || !description.trim()) {
+  const analyzeFindings = async () => {
+    if (!findings.trim()) {
+      setError("Please enter your investigation findings first.");
       return;
     }
 
-    const finding: Finding = {
-      id: crypto.randomUUID(),
-      type,
-      title: title.trim(),
-      description: description.trim(),
-      evidence: evidence.trim() || undefined,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      setLoading(true);
+      setError("");
+      setMessage("");
 
-    onAdd(finding);
+      const response = await fetch(
+        `http://localhost:5000/api/issues/${issueId}/analyze-findings`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            findings: findings.trim(),
+          }),
+        }
+      );
 
-    setTitle("");
-    setDescription("");
-    setEvidence("");
-    setType("OBSERVATION");
-  }
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to analyze findings."
+        );
+      }
+
+      setMessage("Findings analyzed successfully.");
+
+      if (data.analysis) {
+        onAnalysisComplete?.(data.analysis);
+      }
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to analyze findings."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
-    >
-      <div className="mb-6">
-        <p className="text-[10px] uppercase tracking-widest text-blue-400">
-          Developer Evidence
+    <section className="rounded-2xl border border-zinc-800/80 bg-zinc-950 p-7">
+      <div className="mb-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+          AI-assisted debugging
         </p>
 
-        <h2 className="mt-2 text-lg font-semibold text-white">
-          Add Investigation Finding
+        <h2 className="mt-2 text-xl font-semibold text-zinc-100">
+          Analyze developer findings
         </h2>
 
-        <p className="mt-1 text-sm text-zinc-500">
-          Record something you discovered while investigating the issue.
+        <p className="mt-2 text-sm leading-6 text-zinc-600">
+          Add what you discovered while debugging. Gemini will compare
+          your evidence with the previous analysis.
         </p>
       </div>
 
-      <div className="space-y-5">
-        <div>
-          <label className="mb-2 block text-xs font-medium text-zinc-400">
-            Finding type
-          </label>
+      <textarea
+        value={findings}
+        onChange={(event) => {
+          setFindings(event.target.value);
+          setError("");
+          setMessage("");
+        }}
+        placeholder="Document logs, API responses, database checks, experiments, rejected hypotheses, or confirmed behavior..."
+        rows={8}
+        disabled={loading}
+        className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-4 text-sm leading-7 text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-blue-500/40 focus:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
+      />
 
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
-          >
-            {findingTypes.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-xs font-medium text-zinc-400">
-            Title
-          </label>
-
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Profile endpoint returns 500"
-            className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-xs font-medium text-zinc-400">
-            Description
-          </label>
-
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            placeholder="Describe what you discovered..."
-            className="w-full resize-none rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-zinc-700 focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-xs font-medium text-zinc-400">
-            Evidence
-            <span className="ml-2 text-zinc-700">
-              optional
-            </span>
-          </label>
-
-          <textarea
-            value={evidence}
-            onChange={(e) => setEvidence(e.target.value)}
-            rows={5}
-            placeholder={`Paste logs, API response, code snippet, query result, etc.`}
-            className="w-full resize-none rounded-xl border border-zinc-800 bg-black px-4 py-3 font-mono text-xs leading-5 text-zinc-400 outline-none placeholder:text-zinc-700 focus:border-blue-500"
-          />
-        </div>
-
-        <div className="flex justify-end gap-3">
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-xl border border-zinc-800 px-4 py-2.5 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
-            >
-              Cancel
-            </button>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-h-5">
+          {error && (
+            <p className="text-xs text-red-400">
+              {error}
+            </p>
           )}
 
-          <button
-            type="submit"
-            className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
-          >
-            Add Finding
-          </button>
+          {message && (
+            <p className="text-xs text-emerald-400">
+              {message}
+            </p>
+          )}
         </div>
+
+        <button
+          type="button"
+          onClick={analyzeFindings}
+          disabled={loading || !findings.trim()}
+          className="rounded-xl bg-blue-500 px-5 py-2.5 text-xs font-semibold text-black transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {loading ? "Analyzing..." : "Analyze findings →"}
+        </button>
       </div>
-    </form>
+    </section>
   );
 }

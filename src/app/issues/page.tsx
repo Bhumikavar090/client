@@ -15,17 +15,21 @@ interface Issue {
   createdAt: string;
 }
 
+interface IssuesResponse {
+  success?: boolean;
+  issues?: Issue[];
+  data?: Issue[];
+  results?: Issue[];
+}
+
 export default function IssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
   const [statusFilter, setStatusFilter] =
     useState("all");
@@ -44,18 +48,74 @@ export default function IssuesPage() {
 
       if (!response.ok) {
         throw new Error(
-          "Failed to fetch issues"
+          `Failed to fetch issues (${response.status})`
         );
       }
 
-      const data = await response.json();
+      const data: unknown = await response.json();
 
-      setIssues(data);
+      /*
+       * IMPORTANT:
+       *
+       * The backend may return:
+       *
+       * 1. [issue, issue, issue]
+       *
+       * OR
+       *
+       * 2. { success: true, issues: [...] }
+       *
+       * OR
+       *
+       * 3. { success: true, data: [...] }
+       *
+       * OR
+       *
+       * 4. { results: [...] }
+       *
+       * We ALWAYS convert the response into an array
+       * before putting it into React state.
+       */
+
+      let issuesArray: Issue[] = [];
+
+      if (Array.isArray(data)) {
+        issuesArray = data as Issue[];
+      } else if (
+        data &&
+        typeof data === "object"
+      ) {
+        const responseData =
+          data as IssuesResponse;
+
+        if (
+          Array.isArray(responseData.issues)
+        ) {
+          issuesArray = responseData.issues;
+        } else if (
+          Array.isArray(responseData.data)
+        ) {
+          issuesArray = responseData.data;
+        } else if (
+          Array.isArray(responseData.results)
+        ) {
+          issuesArray = responseData.results;
+        }
+      }
+
+      setIssues(issuesArray);
     } catch (error) {
-      console.error(error);
+      console.error(
+        "FETCH ISSUES ERROR:",
+        error
+      );
+
+      setIssues([]);
 
       setError(
-        "Unable to load issues."
+        error instanceof Error
+          ? error.message
+          : "Unable to load issues."
       );
     } finally {
       setLoading(false);
@@ -70,18 +130,37 @@ export default function IssuesPage() {
     const normalizedSearch =
       search.trim().toLowerCase();
 
-    return issues.filter((issue) => {
+    /*
+     * Extra safety:
+     * issues is guaranteed to be an array by fetchIssues,
+     * but we still protect the UI from malformed state.
+     */
+
+    const safeIssues = Array.isArray(issues)
+      ? issues
+      : [];
+
+    return safeIssues.filter((issue) => {
+      const title =
+        typeof issue.title === "string"
+          ? issue.title.toLowerCase()
+          : "";
+
+      const description =
+        typeof issue.description === "string"
+          ? issue.description.toLowerCase()
+          : "";
+
+      const category =
+        typeof issue.category === "string"
+          ? issue.category.toLowerCase()
+          : "";
+
       const matchesSearch =
         normalizedSearch === "" ||
-        issue.title
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        issue.description
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        issue.category
-          ?.toLowerCase()
-          .includes(normalizedSearch);
+        title.includes(normalizedSearch) ||
+        description.includes(normalizedSearch) ||
+        category.includes(normalizedSearch);
 
       const matchesStatus =
         statusFilter === "all" ||
@@ -105,25 +184,29 @@ export default function IssuesPage() {
   ]);
 
   const stats = useMemo(() => {
-    return {
-      total: issues.length,
+    const safeIssues = Array.isArray(issues)
+      ? issues
+      : [];
 
-      open: issues.filter(
+    return {
+      total: safeIssues.length,
+
+      open: safeIssues.filter(
         (issue) =>
           issue.status === "open"
       ).length,
 
-      investigating: issues.filter(
+      investigating: safeIssues.filter(
         (issue) =>
           issue.status === "investigating"
       ).length,
 
-      resolved: issues.filter(
+      resolved: safeIssues.filter(
         (issue) =>
           issue.status === "resolved"
       ).length,
 
-      critical: issues.filter(
+      critical: safeIssues.filter(
         (issue) =>
           issue.priority === "critical"
       ).length,
@@ -132,9 +215,7 @@ export default function IssuesPage() {
 
   return (
     <main className="min-h-screen bg-[#09090b] text-white">
-
       <div className="mx-auto max-w-7xl px-6 py-10">
-
 
         {/* HEADER */}
 
@@ -168,7 +249,6 @@ export default function IssuesPage() {
 
           </div>
 
-
           <Link
             href="/new-issue"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black shadow-lg shadow-black/10 transition hover:bg-zinc-200"
@@ -181,7 +261,6 @@ export default function IssuesPage() {
           </Link>
 
         </div>
-
 
         {/* METRICS */}
 
@@ -199,7 +278,6 @@ export default function IssuesPage() {
 
           </div>
 
-
           <div className="rounded-xl border border-blue-500/10 bg-blue-500/2.5 px-4 py-4">
 
             <p className="text-[10px] uppercase tracking-wider text-zinc-600">
@@ -211,7 +289,6 @@ export default function IssuesPage() {
             </p>
 
           </div>
-
 
           <div className="rounded-xl border border-purple-500/10 bg-purple-500/2.5 px-4 py-4">
 
@@ -227,7 +304,6 @@ export default function IssuesPage() {
 
           </div>
 
-
           <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/2.5 px-4 py-4">
 
             <p className="text-[10px] uppercase tracking-wider text-zinc-600">
@@ -241,7 +317,6 @@ export default function IssuesPage() {
             </p>
 
           </div>
-
 
           <div className="rounded-xl border border-red-500/10 bg-red-500/2.5 px-4 py-4">
 
@@ -258,7 +333,6 @@ export default function IssuesPage() {
           </div>
 
         </div>
-
 
         {/* FILTER BAR */}
 
@@ -288,7 +362,6 @@ export default function IssuesPage() {
 
             </div>
 
-
             {/* STATUS */}
 
             <select
@@ -316,7 +389,6 @@ export default function IssuesPage() {
                 Resolved
               </option>
             </select>
-
 
             {/* PRIORITY */}
 
@@ -354,7 +426,6 @@ export default function IssuesPage() {
 
         </section>
 
-
         {/* RESULTS HEADER */}
 
         {!loading && !error && (
@@ -369,7 +440,9 @@ export default function IssuesPage() {
                 </span>{" "}
                 of{" "}
                 <span className="font-medium text-zinc-300">
-                  {issues.length}
+                  {Array.isArray(issues)
+                    ? issues.length
+                    : 0}
                 </span>{" "}
                 issues
               </p>
@@ -385,7 +458,6 @@ export default function IssuesPage() {
 
           </div>
         )}
-
 
         {/* LOADING */}
 
@@ -403,7 +475,6 @@ export default function IssuesPage() {
 
           </div>
         )}
-
 
         {/* ERROR */}
 
@@ -431,7 +502,6 @@ export default function IssuesPage() {
 
           </div>
         )}
-
 
         {/* EMPTY */}
 
@@ -465,7 +535,6 @@ export default function IssuesPage() {
             </div>
           )}
 
-
         {/* ISSUE GRID */}
 
         {!loading &&
@@ -492,7 +561,6 @@ export default function IssuesPage() {
           )}
 
       </div>
-
     </main>
   );
 }

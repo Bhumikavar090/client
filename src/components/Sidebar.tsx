@@ -66,7 +66,7 @@ export default function Sidebar() {
           <div>
 
             <p className="text-sm font-semibold tracking-tight text-white">
-              DevTraxe
+              DevTrace
             </p>
 
             <p className="text-[8px] uppercase tracking-[0.2em] text-zinc-600">
@@ -160,7 +160,7 @@ function SidebarContent({
           <div>
 
             <p className="text-sm font-semibold tracking-tight text-white">
-              DevTraxe
+              DevTrace
             </p>
 
             <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">

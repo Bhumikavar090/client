@@ -143,7 +143,7 @@ export default function NewIssuePage() {
 
         <div className="mb-10">
           <p className="text-sm text-blue-400 mb-2">
-            DEVTRAXE AI
+            DEVTRACE AI
           </p>
 
           <h1 className="text-3xl font-semibold tracking-tight">
@@ -151,7 +151,7 @@ export default function NewIssuePage() {
           </h1>
 
           <p className="text-zinc-500 mt-2">
-            Describe the problem and let DevTraxe AI
+            Describe the problem and let DevTrace AI
             investigate it.
           </p>
         </div>
